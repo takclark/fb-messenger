@@ -1,13 +1,15 @@
-package server
+package messenger
 
 import (
+	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 )
 
 type MessengerServer struct {
-	VerificationToken string
-	PostHandler       func(http.ResponseWriter, *http.Request)
+	VerificationToken   string
+	MessageEventHandler func(*IncomingFacebookEvent)
 }
 
 // HandleRequestFromFacebook is the top-level http Handler for all requests coming from FB
@@ -17,7 +19,7 @@ func (m *MessengerServer) HandleRequestFromFacebook(w http.ResponseWriter, req *
 	if req.Method == http.MethodGet {
 		m.HandleVerificationRequest(w, req)
 	} else if req.Method == http.MethodPost {
-		m.PostHandler(w, req)
+		m.HandleIncomingEvent(w, req)
 	} else {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
@@ -45,4 +47,22 @@ func (m *MessengerServer) HandleVerificationRequest(w http.ResponseWriter, req *
 			w.WriteHeader(http.StatusForbidden)
 		}
 	}
+}
+
+// HandleIncomingEvent provides a default handler for doing something with events from Facebook
+// unmarshalls the event body into a IncomingFacebookEvent struct then calls the MessageEventHandler
+// with that parameter
+func (m *MessengerServer) HandleIncomingEvent(w http.ResponseWriter, req *http.Request) {
+	fbEvent := &IncomingFacebookEvent{}
+	decoder := json.NewDecoder(req.Body)
+
+	err := decoder.Decode(fbEvent)
+	if err != nil {
+		log.Println("error decoding incoming event:", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	m.MessageEventHandler(fbEvent)
 }
