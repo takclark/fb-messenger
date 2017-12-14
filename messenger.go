@@ -64,5 +64,9 @@ func (m *MessengerServer) HandleIncomingEvent(w http.ResponseWriter, req *http.R
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	// Set the type of this event to be helpful to the handler
+	fbEvent.SetEventCategory()
+
 	m.MessageEventHandler(fbEvent)
 }
