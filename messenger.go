@@ -3,6 +3,7 @@ package messenger
 import (
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 )
@@ -54,11 +55,19 @@ func (m *MessengerServer) HandleVerificationRequest(w http.ResponseWriter, req *
 // with that parameter
 func (m *MessengerServer) HandleIncomingEvent(w http.ResponseWriter, req *http.Request) {
 	fbEvent := &IncomingFacebookEvent{}
-	decoder := json.NewDecoder(req.Body)
+	jsonBody, err := ioutil.ReadAll(req.Body)
 
-	err := decoder.Decode(fbEvent)
 	if err != nil {
-		log.Println("error decoding incoming event:", err)
+		log.Println("error reading incoming request body", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	log.Println("REQUEST:")
+	log.Println(string(jsonBody))
+	err = json.Unmarshal(jsonBody, fbEvent)
+	if err != nil {
+		log.Println("error unmarshalling json request", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
