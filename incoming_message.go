@@ -14,10 +14,10 @@ type Entry struct {
 
 type MessagingEvent struct {
 	Sender struct {
-		ID int64 `json:"id"`
+		ID string `json:"id"`
 	} `json:"sender"`
 	Recipient struct {
-		ID int64 `json:"id"`
+		ID string `json:"id"`
 	} `json:"recipient"`
 	Timestamp int64    `json:"timestamp"`
 	Message   Message  `json:"message"`
