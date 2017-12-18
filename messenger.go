@@ -8,9 +8,15 @@ import (
 	"net/http"
 )
 
+const (
+	LogStandard = iota
+	LogDebug
+)
+
 type MessengerServer struct {
 	VerificationToken   string
 	MessageEventHandler func(*IncomingFacebookEvent)
+	LogLevel int
 }
 
 // HandleRequestFromFacebook is the top-level http Handler for all requests coming from FB
@@ -26,10 +32,13 @@ func (m *MessengerServer) HandleRequestFromFacebook(w http.ResponseWriter, req *
 	}
 }
 
-func NewMessengerClient(verificationSecret string) *MessengerServer {
+func NewMessengerServer(verificationSecret string) *MessengerServer {
 	m := &MessengerServer{
 		VerificationToken: verificationSecret,
 	}
+
+	// default to standard log level
+	m.LogLevel = LogStandard
 
 	return m
 }
@@ -63,8 +72,11 @@ func (m *MessengerServer) HandleIncomingEvent(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	log.Println("REQUEST:")
-	log.Println(string(jsonBody))
+	if m.LogLevel <= LogDebug {
+		log.Println("REQUEST:")
+		log.Println(string(jsonBody))
+	}
+
 	err = json.Unmarshal(jsonBody, fbEvent)
 	if err != nil {
 		log.Println("error unmarshalling json request", err)
