@@ -139,6 +139,10 @@ func (event *IncomingFacebookEvent) SetEventCategory() {
 		return
 	}
 
+	if messagingEvent.Optin != nil && messagingEvent.Optin.Ref != "" {
+		event.EventCategory = Optins
+	}
+
 	if messagingEvent.Enforcement != nil && messagingEvent.Enforcement.Reason != "" {
 		event.EventCategory = PolicyEnforcement
 		return
