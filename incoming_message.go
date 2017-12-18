@@ -26,37 +26,56 @@ type IncomingFacebookEvent struct {
 }
 
 type Entry struct {
-	ID        string            `json:"id"`
-	Time      int64             `json:"time"`
-	Messaging []*MessagingEvent `json:"messaging"`
+	ID        string                        `json:"id"`
+	Time      int64                         `json:"time"`
+	Messaging []*SubscriptionMessagingEvent `json:"messaging"`
 }
 
-type MessagingEvent struct {
+type Recipient struct {
+	ID string `json:"id"`
+}
+
+type SubscriptionMessagingEvent struct {
 	Sender struct {
 		ID string `json:"id"`
 	} `json:"sender"`
-	Recipient struct {
-		ID string `json:"id"`
-	} `json:"recipient"`
-	Timestamp   int64        `json:"timestamp"`
-	Message     *Message     `json:"message"`
-	Delivery    *Delivery    `json:"delivery"`
-	Read        *MessageRead `json:"read"`
-	AccountLink *AccountLink `json:"account_linking"`
-	Handover    *Handover    `json:"pass_thread_control"`
-	Optin       *Optin       `json:"optin"`
-	Enforcement *Enforcement `json:"enforcement"`
-	Postback    *Postback    `json:"postback"`
-	Referral    *Referral    `json:"referral"`
+	Recipient   *Recipient                  `json:"recipient"`
+	Timestamp   int64                       `json:"timestamp"`
+	Message     *SubscriptionMessageContent `json:"message"`
+	Delivery    *Delivery                   `json:"delivery"`
+	Read        *MessageRead                `json:"read"`
+	AccountLink *AccountLink                `json:"account_linking"`
+	Handover    *Handover                   `json:"pass_thread_control"`
+	Optin       *Optin                      `json:"optin"`
+	Enforcement *Enforcement                `json:"enforcement"`
+	Postback    *Postback                   `json:"postback"`
+	Referral    *Referral                   `json:"referral"`
 }
 
-type Message struct {
-	IsEcho     bool   `json:"is_echo"`
-	MID        string `json:"mid"`
-	Text       string `json:"text"`
-	QuickReply struct {
+type SubscriptionMessageContent struct {
+	IsEcho      bool                      `json:"is_echo"`
+	MID         string                    `json:"mid"`
+	Text        string                    `json:"text"`
+	Attachments []*SubscriptionAttachment `json:"attachments"`
+	QuickReply  struct {
 		Payload string `json:"payload"`
 	} `json:"quick_reply"`
+}
+
+type SubscriptionAttachment struct {
+	Type    string                         `json:"type"`
+	Payload *SubscriptionAttachmentPayload `json:"payload"`
+	// Facebook only sends "title" and "URL" for fallback type payloads
+	Title   string                         `json:"title"`
+	URL     string                         `json:"URL"`
+}
+
+type SubscriptionAttachmentPayload struct {
+	URL string `json:"url"`
+	Coordinates *SubscriptionCoordinatesAttachmentPayload `json:"coordinates"`
+}
+
+type SubscriptionCoordinatesAttachmentPayload struct {
 }
 
 type Delivery struct {
