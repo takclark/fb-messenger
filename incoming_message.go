@@ -125,6 +125,11 @@ type Referral struct {
 	Type   string `json:"type"`
 }
 
+// GetSenderID returns the sender ID of a messaging event, useful to determine where to send reply
+func (event *SubscriptionMessagingEvent) GetSenderID() string {
+	return event.Sender.ID
+}
+
 // SetEventCategory determines what type of API subscription a messaging event is
 // Facebook uses the same base for messaging events then within the messaging event will only include the relevant field
 // e.g. A text message event will have a message field but not postback, and vice versa
