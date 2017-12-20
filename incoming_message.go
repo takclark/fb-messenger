@@ -1,33 +1,35 @@
 package messenger
 
+import "encoding/json"
+
 const (
-	MessageReceived   = "messages"
-	AccountLinking    = "messaging_account_linking"
-	Deliveries        = "message_deliveries"
-	Echoes            = "message_echoes"
-	Handovers         = "messaging_handovers"
-	Optins            = "messaging_optins"
-	Payments          = "messaging_payments"
-	PolicyEnforcement = "messaging_policy_enforcement"
-	Postbacks         = "messaging_postbacks"
-	PreCheckouts      = "messaging_pre_checkouts"
-	Reads             = "message_reads"
-	Referrals         = "messaging_referrals"
-	Standby           = "standby"
-	UnknownEvent      = "unknown"
+	EventCategoryMessageReceived   = "messages"
+	EventCategoryAccountLinking    = "messaging_account_linking"
+	EventCategoryDeliveries        = "message_deliveries"
+	EventCategoryEchoes            = "message_echoes"
+	EventCategoryHandovers         = "messaging_handovers"
+	EventCategoryOptins            = "messaging_optins"
+	EventCategoryPayments          = "messaging_payments"
+	EventCategoryPolicyEnforcement = "messaging_policy_enforcement"
+	EventCategoryPostbacks         = "messaging_postbacks"
+	EventCategoryPreCheckouts      = "messaging_pre_checkouts"
+	EventCategoryReads             = "message_reads"
+	EventCategoryReferrals         = "messaging_referrals"
+	EventCategoryStandby           = "standby"
+	EventCategoryUnknownEvent      = "unknown"
 )
 
 // IncomingEvent can be used as the destination for unmarshalling messaging event webhooks
 type IncomingFacebookEvent struct {
 	Object string `json:"object"`
-	// Facebook returns messaging events as an array, but there's always only one element
-	Entry         []*Entry `json:"entry"`
-	EventCategory string
+	// Facebook returns messaging events as an array, there may be multiple
+	Entry []*Entry `json:"entry"`
 }
 
 type Entry struct {
 	ID        string                        `json:"id"`
 	Time      int64                         `json:"time"`
+	// Though this is an array, Facebook always sends only one
 	Messaging []*SubscriptionMessagingEvent `json:"messaging"`
 }
 
@@ -36,7 +38,8 @@ type Recipient struct {
 }
 
 type SubscriptionMessagingEvent struct {
-	Sender struct {
+	EventCategory string
+	Sender        struct {
 		ID string `json:"id"`
 	} `json:"sender"`
 	Recipient   *Recipient                  `json:"recipient"`
@@ -65,17 +68,18 @@ type SubscriptionMessageContent struct {
 type SubscriptionAttachment struct {
 	Type    string                         `json:"type"`
 	Payload *SubscriptionAttachmentPayload `json:"payload"`
-	// Facebook only sends "title" and "URL" for fallback type payloads
 	Title   string                         `json:"title"`
 	URL     string                         `json:"URL"`
 }
 
 type SubscriptionAttachmentPayload struct {
-	URL string `json:"url"`
+	URL         string                                    `json:"url"`
 	Coordinates *SubscriptionCoordinatesAttachmentPayload `json:"coordinates"`
 }
 
 type SubscriptionCoordinatesAttachmentPayload struct {
+	Lat  json.Number `json:"lat"`
+	Long json.Number `json:"long"`
 }
 
 type Delivery struct {
@@ -121,61 +125,59 @@ type Referral struct {
 	Type   string `json:"type"`
 }
 
-// SetEventCategory determines what type of API subscription this event is
-// Facebook uses the same base for all messaging events with object, array of entries, etc.
-// then within the messaging event will only include the relevant field
+// SetEventCategory determines what type of API subscription a messaging event is
+// Facebook uses the same base for messaging events then within the messaging event will only include the relevant field
 // e.g. A text message event will have a message field but not postback, and vice versa
-func (event *IncomingFacebookEvent) SetEventCategory() {
-	messagingEvent := event.Entry[0].Messaging[0]
+func (event *SubscriptionMessagingEvent) SetEventCategory() {
 
-	if messagingEvent.Message != nil && messagingEvent.Message.IsEcho {
-		event.EventCategory = Echoes
+	if event.Message != nil && event.Message.IsEcho {
+		event.EventCategory = EventCategoryEchoes
 		return
 	}
 
-	if messagingEvent.Message != nil && messagingEvent.Message.MID != "" {
-		event.EventCategory = MessageReceived
+	if event.Message != nil && event.Message.MID != "" {
+		event.EventCategory = EventCategoryMessageReceived
 		return
 	}
 
-	if messagingEvent.Delivery != nil && messagingEvent.Delivery.Watermark != 0 {
-		event.EventCategory = Deliveries
+	if event.Delivery != nil && event.Delivery.Watermark != 0 {
+		event.EventCategory = EventCategoryDeliveries
 		return
 	}
 
-	if messagingEvent.Read != nil && messagingEvent.Read.Watermark != 0 {
-		event.EventCategory = Reads
+	if event.Read != nil && event.Read.Watermark != 0 {
+		event.EventCategory = EventCategoryReads
 		return
 	}
 
-	if messagingEvent.AccountLink != nil && messagingEvent.AccountLink.Status != "" {
-		event.EventCategory = AccountLinking
+	if event.AccountLink != nil && event.AccountLink.Status != "" {
+		event.EventCategory = EventCategoryAccountLinking
 		return
 	}
 
-	if messagingEvent.Handover != nil && messagingEvent.Handover.NewOwnerAppID != "" {
-		event.EventCategory = Handovers
+	if event.Handover != nil && event.Handover.NewOwnerAppID != "" {
+		event.EventCategory = EventCategoryHandovers
 		return
 	}
 
-	if messagingEvent.Optin != nil && messagingEvent.Optin.Ref != "" {
-		event.EventCategory = Optins
+	if event.Optin != nil && event.Optin.Ref != "" {
+		event.EventCategory = EventCategoryOptins
 	}
 
-	if messagingEvent.Enforcement != nil && messagingEvent.Enforcement.Reason != "" {
-		event.EventCategory = PolicyEnforcement
+	if event.Enforcement != nil && event.Enforcement.Reason != "" {
+		event.EventCategory = EventCategoryPolicyEnforcement
 		return
 	}
 
-	if messagingEvent.Postback != nil && messagingEvent.Postback.Title != "" {
-		event.EventCategory = Postbacks
+	if event.Postback != nil && event.Postback.Title != "" {
+		event.EventCategory = EventCategoryPostbacks
 		return
 	}
 
-	if messagingEvent.Referral != nil && messagingEvent.Referral.Source != "" {
-		event.EventCategory = Referrals
+	if event.Referral != nil && event.Referral.Source != "" {
+		event.EventCategory = EventCategoryReferrals
 		return
 	}
 
-	event.EventCategory = UnknownEvent
+	event.EventCategory = EventCategoryUnknownEvent
 }

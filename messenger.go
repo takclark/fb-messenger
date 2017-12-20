@@ -15,7 +15,7 @@ const (
 
 type MessengerServer struct {
 	VerificationToken   string
-	MessageEventHandler func(*IncomingFacebookEvent)
+	MessageEventHandler func(*SubscriptionMessagingEvent)
 	LogLevel int
 }
 
@@ -86,8 +86,11 @@ func (m *MessengerServer) HandleIncomingEvent(w http.ResponseWriter, req *http.R
 
 	w.WriteHeader(http.StatusOK)
 
-	// Set the type of this event to be helpful to the handler
-	fbEvent.SetEventCategory()
-
-	m.MessageEventHandler(fbEvent)
+	// For all entries, handle the messaging event
+	for _, entry := range fbEvent.Entry {
+		// There's only one messaging event even though this is an array
+		messagingEvent := entry.Messaging[0]
+		messagingEvent.SetEventCategory()
+		m.MessageEventHandler(messagingEvent)
+	}
 }
